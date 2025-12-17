@@ -76,4 +76,32 @@ export const getCompanyById = async (id: string): Promise<ApiResponse<Partial<Co
   }
 };
 
+/**
+ * Fetch company metadata from public sources
+ */
+export interface CompanyMetadata {
+  name?: string;
+  registeredAddress?: string;
+  authorizedCapital?: number;
+  paidUpCapital?: number;
+  incorporationDate?: string;
+  email?: string;
+  companyType?: string;
+}
+
+export const fetchCompanyMetadata = async (cin: string): Promise<ApiResponse<CompanyMetadata>> => {
+  try {
+    const response = await api.get<ApiResponse<CompanyMetadata>>(`/api/companies/fetch-metadata/${cin}`);
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.data) {
+      return error.response.data;
+    }
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch company metadata',
+    };
+  }
+};
+
 export default api;

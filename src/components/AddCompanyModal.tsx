@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, AlertCircle, CheckCircle } from 'lucide-react';
-import { createCompany, CreateCompanyData } from '../services/api';
+import { X, AlertCircle, CheckCircle, Download, Loader2 } from 'lucide-react';
+import { createCompany, CreateCompanyData, fetchCompanyMetadata } from '../services/api';
 import { CompanyType } from '../types';
 
 interface AddCompanyModalProps {
@@ -22,8 +22,10 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ isOpen, onClose, onSu
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [fetchSuccess, setFetchSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const validateForm = (): boolean => {
@@ -45,7 +47,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ isOpen, onClose, onSu
 
     // Email validation
     if (!formData.email) {
-      errors.email = 'Email is required';
+      errors.email = 'Email is required (will need to be entered manually if not auto-filled)';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Invalid email format';
     }
@@ -92,6 +94,43 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ isOpen, onClose, onSu
     }
   };
 
+  const handleFetchMetadata = async () => {
+    if (!formData.cin || formData.cin.length !== 21) {
+      setError('Please enter a valid 21-character CIN first');
+      return;
+    }
+
+    setIsFetching(true);
+    setError(null);
+    setFetchSuccess(false);
+
+    try {
+      const result = await fetchCompanyMetadata(formData.cin);
+
+      if (result.success && result.data) {
+        // Auto-fill form with fetched data
+        setFormData((prev) => ({
+          ...prev,
+          name: result.data?.name || prev.name,
+          email: result.data?.email || prev.email,
+          registeredAddress: result.data?.registeredAddress || prev.registeredAddress,
+          authorizedCapital: result.data?.authorizedCapital || prev.authorizedCapital,
+          paidUpCapital: result.data?.paidUpCapital || prev.paidUpCapital,
+          incorporationDate: result.data?.incorporationDate || prev.incorporationDate,
+        }));
+
+        setFetchSuccess(true);
+        setTimeout(() => setFetchSuccess(false), 3000);
+      } else {
+        setError(result.error || 'Company data not found. Please enter details manually.');
+      }
+    } catch (err: any) {
+      setError('Failed to fetch company data. Please enter details manually.');
+    } finally {
+      setIsFetching(false);
+    }
+  };
+
   const handleClose = () => {
     setFormData({
       cin: '',
@@ -105,6 +144,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ isOpen, onClose, onSu
     });
     setError(null);
     setSuccess(false);
+    setFetchSuccess(false);
     setValidationErrors({});
     onClose();
   };
@@ -157,6 +197,17 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ isOpen, onClose, onSu
             </div>
           )}
 
+          {/* Fetch Success Message */}
+          {fetchSuccess && (
+            <div className="mx-6 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start">
+              <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-semibold text-blue-800">Data Fetched Successfully!</h3>
+                <p className="text-sm text-blue-700 mt-1">Form fields have been auto-filled. Please review and submit.</p>
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
@@ -170,29 +221,70 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({ isOpen, onClose, onSu
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* CIN */}
+            {/* CIN with Fetch Button */}
             <div>
               <label htmlFor="cin" className="block text-sm font-medium text-gray-700 mb-1">
                 Corporate Identification Number (CIN) <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                id="cin"
-                maxLength={21}
-                value={formData.cin}
-                onChange={(e) => handleInputChange('cin', e.target.value.toUpperCase())}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  validationErrors.cin ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="U12345MH2020PTC123456"
-                disabled={isLoading || success}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="cin"
+                  maxLength={21}
+                  value={formData.cin}
+                  onChange={(e) => handleInputChange('cin', e.target.value.toUpperCase())}
+                  className={`w-full px-4 py-2 pr-32 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.cin ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="U12345MH2020PTC123456"
+                  disabled={isLoading || success}
+                />
+                <button
+                  type="button"
+                  onClick={handleFetchMetadata}
+                  disabled={isFetching || isLoading || success || formData.cin.length !== 21}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-1"
+                >
+                  {isFetching ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Fetching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-3 h-3" />
+                      <span>Fetch Data</span>
+                    </>
+                  )}
+                </button>
+              </div>
               {validationErrors.cin && (
                 <p className="text-red-500 text-xs mt-1">{validationErrors.cin}</p>
               )}
               <p className="text-gray-500 text-xs mt-1">
-                21 characters (uppercase letters and numbers only)
+                21 characters • Click "Fetch Data" to auto-fill company details
               </p>
+            </div>
+
+            {/* Company Name */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Company Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  validationErrors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Example Private Limited"
+                disabled={isLoading || success}
+              />
+              {validationErrors.name && (
+                <p className="text-red-500 text-xs mt-1">{validationErrors.name}</p>
+              )}
             </div>
 
             {/* Company Name */}

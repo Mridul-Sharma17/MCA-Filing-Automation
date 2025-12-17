@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../db.js';
 import { Company, CompanyType, ApiResponse } from '../../../types.js';
+import { fetchCompanyMetadata } from '../services/scraper.js';
 
 const router = Router();
 
@@ -202,6 +203,45 @@ router.get('/:id', async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to fetch company',
+    } as ApiResponse<null>);
+  }
+});
+
+// GET /api/companies/fetch-metadata/:cin - Fetch company metadata from public sources
+router.get('/fetch-metadata/:cin', async (req: Request, res: Response) => {
+  try {
+    const { cin } = req.params;
+
+    // Validate CIN format
+    if (!cin || cin.length !== 21) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid CIN format. CIN must be 21 characters.',
+      } as ApiResponse<null>);
+    }
+
+    console.log(`Fetching metadata for CIN: ${cin}`);
+
+    // Fetch metadata from scraper service
+    const metadata = await fetchCompanyMetadata(cin);
+
+    if (!metadata) {
+      return res.status(404).json({
+        success: false,
+        error: 'Company data not found in public directories. Please enter details manually.',
+      } as ApiResponse<null>);
+    }
+
+    return res.json({
+      success: true,
+      data: metadata,
+    } as ApiResponse<typeof metadata>);
+
+  } catch (error: any) {
+    console.error('Error fetching metadata:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch company metadata. Please try again or enter details manually.',
     } as ApiResponse<null>);
   }
 });
