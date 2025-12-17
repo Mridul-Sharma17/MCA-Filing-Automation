@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import companyRoutes from './routes/companies.js';
+import filingRoutes from './routes/filings.js';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/companies', companyRoutes);
+app.use('/api/filings', filingRoutes);
 
 app.listen(port, () => {
   console.log(`Backend API running on http://localhost:${port}`);
