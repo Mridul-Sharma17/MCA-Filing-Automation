@@ -1,0 +1,5 @@
+{
+  "name": "MCA Filing Automator",
+  "description": "A comprehensive automation tool for Indian MCA annual filings (AOC-4 & MGT-7). Includes a dashboard for managing companies, tracking filing status, and triggering Playwright automation scripts.",
+  "requestFramePermissions": []
+}

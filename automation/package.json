@@ -1,0 +1,18 @@
+{
+  "name": "mca-automation",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "codegen": "playwright codegen",
+    "mca:login": "playwright test tests/mca-login.spec.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.38.0",
+    "@types/node": "^20.5.9",
+    "typescript": "^5.2.2"
+  }
+}
