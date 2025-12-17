@@ -65,8 +65,8 @@ fi
 echo ""
 echo -e "${BLUE}[4/4] Testing Company Creation...${NC}"
 
-# Generate unique CIN
-RANDOM_NUM=$(date +%s | tail -c 6)
+# Generate unique CIN (must be exactly 21 characters)
+RANDOM_NUM=$(date +%s | tail -c 7)
 TEST_CIN="U12345MH2023PTC${RANDOM_NUM}"
 
 echo "  Creating test company with CIN: $TEST_CIN"

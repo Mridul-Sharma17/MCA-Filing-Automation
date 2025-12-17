@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { query } from '../db.js';
-import { Company, CompanyType, ApiResponse } from '../../types.js';
+import { Company, CompanyType, ApiResponse } from '../../../types.js';
 
 const router = Router();
 
