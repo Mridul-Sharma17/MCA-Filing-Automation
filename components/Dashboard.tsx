@@ -1,39 +1,7 @@
-import React from 'react';
-import { CompanyType, FilingStatus } from '../types';
-
-// Mock Data to visualize the layout
-const MOCK_COMPANIES = [
-  {
-    id: '1',
-    name: 'TechFlow Solutions Pvt Ltd',
-    cin: 'U72900KA2020PTC123456',
-    type: CompanyType.PRIVATE,
-    fy: '2023-2024',
-    aoc4_status: FilingStatus.DATA_GATHERING,
-    mgt7_status: FilingStatus.PENDING,
-    next_deadline: '2024-09-30'
-  },
-  {
-    id: '2',
-    name: 'GreenField Agro LLP',
-    cin: 'AAA-1234',
-    type: CompanyType.LLP,
-    fy: '2023-2024',
-    aoc4_status: FilingStatus.READY_FOR_SIGNATURE,
-    mgt7_status: FilingStatus.DATA_GATHERING,
-    next_deadline: '2024-10-30'
-  },
-  {
-    id: '3',
-    name: 'OmniVentures Ltd',
-    cin: 'L12345MH1990PLC098765',
-    type: CompanyType.LISTED,
-    fy: '2023-2024',
-    aoc4_status: FilingStatus.UPLOADED,
-    mgt7_status: FilingStatus.PRE_SCRUTINY_PENDING,
-    next_deadline: '2024-08-15'
-  }
-];
+import React, { useState } from 'react';
+import { FilingStatus } from '../types';
+import CompanyList from '../src/components/CompanyList';
+import AddCompanyModal from '../src/components/AddCompanyModal';
 
 const StatusBadge: React.FC<{ status: FilingStatus }> = ({ status }) => {
   const styles = {
@@ -55,6 +23,22 @@ const StatusBadge: React.FC<{ status: FilingStatus }> = ({ status }) => {
 };
 
 const Dashboard: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleCompanyCreated = () => {
+    // Trigger refresh of company list
+    setRefreshTrigger((prev) => prev + 1);
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats Row */}
@@ -84,55 +68,19 @@ const Dashboard: React.FC = () => {
           <button className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-50">
             Import from Excel
           </button>
-          <button className="bg-mca-blue text-white px-4 py-2 rounded hover:bg-blue-800 shadow-sm">
+          <button 
+            onClick={handleOpenModal}
+            className="bg-mca-blue text-white px-4 py-2 rounded hover:bg-blue-800 shadow-sm"
+          >
             + New Filing
           </button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company Details</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AOC-4 Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MGT-7 Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Deadline</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {MOCK_COMPANIES.map((company) => (
-              <tr key={company.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-900">{company.name}</span>
-                    <span className="text-xs text-gray-500">{company.cin}</span>
-                    <span className="text-xs text-gray-400 mt-1">{company.type}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <StatusBadge status={company.aoc4_status} />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <StatusBadge status={company.mgt7_status} />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                   <span className="text-sm text-red-600 font-medium">
-                    {company.next_deadline}
-                   </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button className="text-mca-blue hover:text-blue-900 mr-4">Manage</button>
-                  <button className="text-gray-500 hover:text-gray-700">View History</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Company List */}
+      <CompanyList refreshTrigger={refreshTrigger} />
       
+      {/* System Alert */}
       <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
         <div className="flex">
           <div className="flex-shrink-0">
@@ -147,6 +95,13 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Company Modal */}
+      <AddCompanyModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={handleCompanyCreated}
+      />
     </div>
   );
 };
